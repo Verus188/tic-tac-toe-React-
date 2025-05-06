@@ -12,7 +12,7 @@ function Board() {
     for (let i = 0; i < 9; i++) {
       const square: ISquare = {
         squareValue: null,
-        squareLife: 3,
+        squareLife: 0,
       };
       res[i] = square;
     }
@@ -49,12 +49,14 @@ function Board() {
       calculateWinner(squares, curXTime, curOTime)
     )
       return;
-    const nextSquares = squares.slice();
+    const nextSquares = eraseSymbols(squares);
 
     if (xIsNext) {
       nextSquares[i].squareValue = "X";
+      nextSquares[i].squareLife = 4;
     } else {
       nextSquares[i].squareValue = "O";
+      nextSquares[i].squareLife = 4;
     }
 
     setSquares(nextSquares);
@@ -157,6 +159,17 @@ function calculateWinner(
   }
 }
 
-function eraseSymbols(squares: SquareValue[]): void {}
+function eraseSymbols(squares: ISquare[]): ISquare[] {
+  const squaresCopy: ISquare[] = squares.slice();
+
+  for (let i = 0; i < squaresCopy.length; i++) {
+    if (squaresCopy[i].squareValue && squaresCopy[i].squareLife > 0) {
+      squaresCopy[i].squareLife--;
+    } else if (squaresCopy[i].squareValue && squaresCopy[i].squareLife <= 0) {
+      squaresCopy[i].squareValue = null;
+    }
+  }
+  return squaresCopy;
+}
 
 export { Board };
