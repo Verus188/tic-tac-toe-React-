@@ -1,4 +1,4 @@
-import { useContext, useEffect, useReducer, useState } from "react";
+import { useContext, useEffect, useMemo, useReducer, useState } from "react";
 import { Square } from "./Square";
 import { ISquare, SquareValue } from "../../types/ISquare";
 import "../../index.css";
@@ -36,6 +36,8 @@ function Board(props: Props) {
         return curTime + action.payload;
       case "MINUS":
         return curTime - action.payload;
+      case "SET":
+        return action.payload;
       default:
         return curTime;
     }
@@ -50,12 +52,12 @@ function Board(props: Props) {
 
   useEffect(() => {
     let interval = 0;
-    if (isGameActive && curXTime > 0 && !winner && xIsNext) {
+    if (isGameActive && !winner && xIsNext) {
       interval = setInterval(() => {
         // setCurXTime((curTime) => curTime - 1);
         dispatchX({ type: "MINUS", payload: 1 });
       }, 1000);
-    } else if (isGameActive && curOTime > 0 && !winner && !xIsNext) {
+    } else if (isGameActive && !winner && !xIsNext) {
       interval = setInterval(() => {
         dispatchO({ type: "MINUS", payload: 1 });
       }, 1000);
@@ -67,12 +69,7 @@ function Board(props: Props) {
   }, [isGameActive, curXTime, curOTime]);
 
   function handleClick(i: number): void {
-    if (
-      !isGameActive ||
-      squares[i].squareValue ||
-      calculateWinner(squares, curXTime, curOTime)
-    )
-      return;
+    if (!isGameActive || squares[i].squareValue || winner) return;
     const nextSquares = eraseSymbols(squares);
 
     if (xIsNext) {
@@ -89,7 +86,11 @@ function Board(props: Props) {
     setXIsNext(!xIsNext);
   }
 
-  const winner: SquareValue = calculateWinner(squares, curXTime, curOTime);
+  let winner: SquareValue = useMemo(() => calculateWinner(squares), [squares]);
+  if (!winner) {
+    winner = calculateTimeWinner(curXTime, curOTime);
+  }
+
   let status: string;
   if (winner) {
     status = "Winner: " + winner;
@@ -150,11 +151,7 @@ function setGameStateButtonText(isGameActive: boolean): string {
   }
 }
 
-function calculateWinner(
-  squares: ISquare[],
-  curXTime: number,
-  curOTime: number
-): SquareValue {
+function calculateWinner(squares: ISquare[]): SquareValue {
   const lines: number[][] = [
     [0, 1, 2],
     [3, 4, 5],
@@ -176,7 +173,10 @@ function calculateWinner(
       return squares[a].squareValue;
     }
   }
+  return null;
+}
 
+function calculateTimeWinner(curXTime: number, curOTime: number): SquareValue {
   if (curXTime <= 0) {
     return "O";
   } else if (curOTime <= 0) {
