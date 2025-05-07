@@ -1,5 +1,5 @@
-import { ISquare, SquareValue } from "../../../types/ISquare";
-import "../../../index.css";
+import { ISquare, SquareValue } from "../../types/ISquare";
+import "../../index.css";
 
 interface Props {
   square: ISquare;

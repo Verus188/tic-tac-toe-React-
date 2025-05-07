@@ -1,10 +1,21 @@
-import { useEffect, useState } from "react";
-import { Square } from "../Square/Square";
-import { ISquare, SquareValue } from "../../../types/ISquare";
-import "../../../index.css";
+import { useContext, useEffect, useReducer, useState } from "react";
+import { Square } from "./Square";
+import { ISquare, SquareValue } from "../../types/ISquare";
+import "../../index.css";
+import { GameContext } from "./App";
 
-function Board() {
-  const startGameTime: number = 15;
+type TimeAction =
+  | { type: "PLUS"; payload: number }
+  | { type: "MINUS"; payload: number }
+  | { type: "SET"; payload: number };
+
+interface Props {
+  setGamesCount(count: number): void;
+}
+
+function Board(props: Props) {
+  const startGameTime = 3;
+  const additionalTime = 1;
 
   function createSquares(): ISquare[] {
     let res: ISquare[] = Array(9);
@@ -19,21 +30,34 @@ function Board() {
     return res;
   }
 
+  function timeReducer(curTime: number, action: TimeAction) {
+    switch (action.type) {
+      case "PLUS":
+        return curTime + action.payload;
+      case "MINUS":
+        return curTime - action.payload;
+      default:
+        return curTime;
+    }
+  }
+
   const [isGameActive, setGameActive] = useState(false);
   const [xIsNext, setXIsNext] = useState(true);
   const [squares, setSquares] = useState<ISquare[]>(createSquares());
-  const [curXTime, setCurXTime] = useState(startGameTime);
-  const [curOTime, setCurOTime] = useState(startGameTime);
+  const [curXTime, dispatchX] = useReducer(timeReducer, startGameTime);
+  const [curOTime, dispatchO] = useReducer(timeReducer, startGameTime);
+  const gamesCounter = useContext(GameContext);
 
   useEffect(() => {
     let interval = 0;
     if (isGameActive && curXTime > 0 && !winner && xIsNext) {
       interval = setInterval(() => {
-        setCurXTime((curTime) => curTime - 1);
+        // setCurXTime((curTime) => curTime - 1);
+        dispatchX({ type: "MINUS", payload: 1 });
       }, 1000);
     } else if (isGameActive && curOTime > 0 && !winner && !xIsNext) {
       interval = setInterval(() => {
-        setCurOTime((curTime) => curTime - 1);
+        dispatchO({ type: "MINUS", payload: 1 });
       }, 1000);
     } else {
       setGameActive(false);
@@ -52,9 +76,11 @@ function Board() {
     const nextSquares = eraseSymbols(squares);
 
     if (xIsNext) {
+      dispatchX({ type: "PLUS", payload: additionalTime });
       nextSquares[i].squareValue = "X";
       nextSquares[i].squareLife = 4;
     } else {
+      dispatchO({ type: "PLUS", payload: additionalTime });
       nextSquares[i].squareValue = "O";
       nextSquares[i].squareLife = 4;
     }
@@ -72,9 +98,10 @@ function Board() {
   }
 
   function startGame() {
+    props.setGamesCount(gamesCounter + 1);
     setGameActive(true);
-    setCurXTime(startGameTime);
-    setCurOTime(startGameTime);
+    dispatchX({ type: "SET", payload: startGameTime });
+    dispatchO({ type: "SET", payload: startGameTime });
     setSquares(createSquares());
     setXIsNext(true);
   }
